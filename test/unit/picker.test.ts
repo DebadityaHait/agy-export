@@ -119,7 +119,8 @@ describe("terminal picker line rendering", () => {
       80,
       24
     );
-    assert.ok(linesScoped.some((l) => l.includes("tab all")));
+    assert.ok(linesScoped.some((l) => l.includes("tab options")));
+    assert.ok(!linesScoped.some((l) => l.includes("all workspaces")));
 
     const linesAll = buildPickerLines(
       sampleConversations,
@@ -130,7 +131,7 @@ describe("terminal picker line rendering", () => {
       24
     );
     assert.ok(linesAll.some((l) => l.includes("all workspaces") || l.includes("all")));
-    assert.ok(linesAll.some((l) => l.includes("tab workspace") || l.includes("tab ws")));
+    assert.ok(linesAll.some((l) => l.includes("tab options")));
   });
 });
 
@@ -224,7 +225,7 @@ describe("terminal picker export options and hotkeys", () => {
     assert.equal(cycleMode("messages"), "full");
   });
 
-  it("handlePickerKeypress cycles format with Ctrl+F and Alt+F", () => {
+  it("does not toggle options from main screen with direct shortcuts", () => {
     const state: PickerState = {
       searchQuery: "",
       selectedIndex: 0,
@@ -234,108 +235,41 @@ describe("terminal picker export options and hotkeys", () => {
       focusedOptionIndex: 0
     };
 
-    // 1. Ctrl+F
+    // 1. Ctrl+F and Alt+F do not cycle format on main screen
     let action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "f" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(action.shouldRender, true);
-    assert.equal(action.done, false);
-    assert.equal(state.exportOptions.format, "json");
-
-    // 2. Alt+F
-    action = handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "f" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.format, "md");
-
-    // 3. F3 alias
-    action = handlePickerKeypress(state, makeKey({ ctrl: false, meta: false, name: "f3" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
     assert.equal(state.exportOptions.format, "jsonl");
-  });
 
-  it("handlePickerKeypress cycles mode with Ctrl+E, Ctrl+P, and Alt+M", () => {
-    const state: PickerState = {
-      searchQuery: "",
-      selectedIndex: 0,
-      filteredList: [...sampleConversations],
-      exportOptions: { ...DEFAULT_PICKER_EXPORT_OPTIONS },
-      optionsFocus: false,
-      focusedOptionIndex: 0
-    };
+    action = handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "f" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
+    assert.equal(state.exportOptions.format, "jsonl");
 
-    // 1. Ctrl+E
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "e" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.mode, "compact");
-
-    // 2. Alt+M
-    handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "m" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.mode, "messages");
-
-    // 3. Ctrl+P
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "p" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // 2. Ctrl+E, Ctrl+P, Alt+M do not cycle mode on main screen
+    action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "e" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
     assert.equal(state.exportOptions.mode, "full");
-  });
 
-  it("handlePickerKeypress toggles redact with Ctrl+R and Alt+R", () => {
-    const state: PickerState = {
-      searchQuery: "",
-      selectedIndex: 0,
-      filteredList: [...sampleConversations],
-      exportOptions: { ...DEFAULT_PICKER_EXPORT_OPTIONS },
-      optionsFocus: false,
-      focusedOptionIndex: 0
-    };
+    action = handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "m" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
+    assert.equal(state.exportOptions.mode, "full");
 
+    // 3. Ctrl+R and Alt+R do not toggle redact on main screen
+    action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "r" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
     assert.equal(state.exportOptions.redact, false);
 
-    // Toggle on with Ctrl+R
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "r" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.redact, true);
-
-    // Toggle off with Alt+R
-    handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "r" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.redact, false);
-  });
-
-  it("handlePickerKeypress toggles tools with Ctrl+T and Alt+T", () => {
-    const state: PickerState = {
-      searchQuery: "",
-      selectedIndex: 0,
-      filteredList: [...sampleConversations],
-      exportOptions: { ...DEFAULT_PICKER_EXPORT_OPTIONS },
-      optionsFocus: false,
-      focusedOptionIndex: 0
-    };
-
+    // 4. Ctrl+T and Alt+T do not toggle tools on main screen
+    action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "t" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
     assert.equal(state.exportOptions.includeTools, true);
 
-    // Toggle off with Ctrl+T
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "t" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.includeTools, false);
-
-    // Toggle on with Alt+T
-    handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "t" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.includeTools, true);
-  });
-
-  it("handlePickerKeypress toggles diffs with Ctrl+D and Alt+D", () => {
-    const state: PickerState = {
-      searchQuery: "",
-      selectedIndex: 0,
-      filteredList: [...sampleConversations],
-      exportOptions: { ...DEFAULT_PICKER_EXPORT_OPTIONS },
-      optionsFocus: false,
-      focusedOptionIndex: 0
-    };
-
-    assert.equal(state.exportOptions.includeDiffs, true);
-
-    // Toggle off with Ctrl+D
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "d" }), sampleConversations, { workspace: "d:/test", isAll: false });
-    assert.equal(state.exportOptions.includeDiffs, false);
-
-    // Toggle on with Alt+D
-    handlePickerKeypress(state, makeKey({ ctrl: false, meta: true, name: "d" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // 5. Ctrl+D and Alt+D do not toggle diffs on main screen
+    action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "d" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, false);
     assert.equal(state.exportOptions.includeDiffs, true);
   });
 
-  it("handlePickerKeypress toggles options focus mode with Ctrl+O and F2", () => {
+  it("enters options focus mode with Tab, Backtab, Ctrl+O, and F2", () => {
     const state: PickerState = {
       searchQuery: "",
       selectedIndex: 0,
@@ -345,11 +279,39 @@ describe("terminal picker export options and hotkeys", () => {
       focusedOptionIndex: 0
     };
 
-    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "o" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Tab enters options focus
+    let action = handlePickerKeypress(state, makeKey({ name: "tab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, true);
     assert.equal(state.optionsFocus, true);
 
-    handlePickerKeypress(state, makeKey({ ctrl: false, meta: false, name: "f2" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Esc exits options focus
+    action = handlePickerKeypress(state, makeKey({ name: "escape" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, true);
+    assert.equal(action.done, false);
     assert.equal(state.optionsFocus, false);
+
+    // Backtab also enters options focus from main screen
+    action = handlePickerKeypress(state, makeKey({ name: "backtab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, true);
+    assert.equal(state.optionsFocus, true);
+
+    // Esc exits
+    handlePickerKeypress(state, makeKey({ name: "escape" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.optionsFocus, false);
+
+    // Ctrl+O enters options focus
+    action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "o" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, true);
+    assert.equal(state.optionsFocus, true);
+
+    // Esc exits
+    handlePickerKeypress(state, makeKey({ name: "escape" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.optionsFocus, false);
+
+    // F2 enters options focus
+    action = handlePickerKeypress(state, makeKey({ name: "f2" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(action.shouldRender, true);
+    assert.equal(state.optionsFocus, true);
   });
 
   it("handlePickerKeypress navigates and toggles within options focus mode", () => {
@@ -370,28 +332,108 @@ describe("terminal picker export options and hotkeys", () => {
     handlePickerKeypress(state, makeKey({ name: "space" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.exportOptions.mode, "compact");
 
-    // Right arrow to Option 2 (redact)
-    handlePickerKeypress(state, makeKey({ name: "right" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Tab to Option 2 (redact)
+    handlePickerKeypress(state, makeKey({ name: "tab" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.focusedOptionIndex, 2);
 
     // Up toggles redact to true
     handlePickerKeypress(state, makeKey({ name: "up" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.exportOptions.redact, true);
 
-    // Direct letter keys in options mode
-    handlePickerKeypress(state, makeKey({ sequence: "t", name: "t" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Tab to Option 3 (tools)
+    handlePickerKeypress(state, makeKey({ name: "tab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 3);
+
+    // Down toggles tools to false
+    handlePickerKeypress(state, makeKey({ name: "down" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.exportOptions.includeTools, false);
 
-    handlePickerKeypress(state, makeKey({ sequence: "d", name: "d" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Tab to Option 4 (diffs)
+    handlePickerKeypress(state, makeKey({ name: "tab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 4);
+
+    // Enter toggles diffs to false
+    handlePickerKeypress(state, makeKey({ name: "enter" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.exportOptions.includeDiffs, false);
 
-    handlePickerKeypress(state, makeKey({ sequence: "f", name: "f" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    // Tab wraps around to Option 0 (format)
+    handlePickerKeypress(state, makeKey({ name: "tab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 0);
+
+    // Return toggles format to json
+    handlePickerKeypress(state, makeKey({ name: "return" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(state.exportOptions.format, "json");
+
+    // Shift+Tab navigates backward to Option 4
+    handlePickerKeypress(state, makeKey({ name: "tab", shift: true }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 4);
+
+    // Backtab navigates backward to Option 3
+    handlePickerKeypress(state, makeKey({ name: "backtab" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 3);
+
+    // Left arrow navigates backward to Option 2
+    handlePickerKeypress(state, makeKey({ name: "left" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 2);
+
+    // Raw space sequence toggles redact to false
+    handlePickerKeypress(state, makeKey({ sequence: " ", name: "space" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.exportOptions.redact, false);
+
+    // Move to Option 0 and test left arrow wrapping around to Option 4
+    state.focusedOptionIndex = 0;
+    handlePickerKeypress(state, makeKey({ name: "left" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 4);
+
+    // Right arrow on Option 4 wraps around to Option 0
+    handlePickerKeypress(state, makeKey({ name: "right" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.focusedOptionIndex, 0);
+
+    // Direct letter keys in options mode
+    handlePickerKeypress(state, makeKey({ sequence: "t", name: "t" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.exportOptions.includeTools, true);
+
+    handlePickerKeypress(state, makeKey({ sequence: "d", name: "d" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.exportOptions.includeDiffs, true);
+
+    handlePickerKeypress(state, makeKey({ sequence: "f", name: "f" }), sampleConversations, { workspace: "d:/test", isAll: false });
+    assert.equal(state.exportOptions.format, "md");
 
     // Esc exits options focus back to list search without exiting picker
     const action = handlePickerKeypress(state, makeKey({ name: "escape" }), sampleConversations, { workspace: "d:/test", isAll: false });
     assert.equal(action.done, false);
     assert.equal(state.optionsFocus, false);
+  });
+
+  it("renders a clean and uncluttered footer on the main screen", () => {
+    const lines = buildPickerLines(sampleConversations, { workspace: "d:/k0de2/agy-export", isAll: false }, "", 0, 80);
+    const footerLine = lines[lines.length - 1];
+    assert.ok(footerLine.includes("tab options"), "Footer should display tab options");
+    assert.ok(footerLine.includes("enter export"), "Footer should display enter export");
+    assert.ok(footerLine.includes("esc quit"), "Footer should display esc quit");
+    assert.ok(!footerLine.includes("^F"), "Footer should not have ^F");
+    assert.ok(!footerLine.includes("^E"), "Footer should not have ^E");
+    assert.ok(!footerLine.includes("^R"), "Footer should not have ^R");
+    assert.ok(!lines.some((l) => l.includes("^F format")), "Lines should not have hints line");
+  });
+
+  it("toggles workspace filter with Ctrl+W on main screen", () => {
+    const options = { workspace: "d:/test", isAll: false };
+    const state: PickerState = {
+      searchQuery: "",
+      selectedIndex: 0,
+      filteredList: [...sampleConversations],
+      exportOptions: { ...DEFAULT_PICKER_EXPORT_OPTIONS },
+      optionsFocus: false,
+      focusedOptionIndex: 0
+    };
+
+    const action = handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "w" }), sampleConversations, options);
+    assert.equal(action.shouldRender, true);
+    assert.equal(options.isAll, true);
+
+    handlePickerKeypress(state, makeKey({ ctrl: true, meta: false, name: "w" }), sampleConversations, options);
+    assert.equal(options.isAll, false);
   });
 
   it("handlePickerKeypress returns full PickerResult payload on Enter", () => {
@@ -586,5 +628,37 @@ describe("terminal picker export options and hotkeys", () => {
     assert.ok(lines.length <= 8, `Lines length ${lines.length} must be <= 8 rows`);
     const hasOptions = lines.some((l) => l.includes("format:") || l.includes("fmt:") || l.includes("[jsonl]"));
     assert.ok(hasOptions, "Options bar must be rendered when optionsFocus is true in minimal row mode");
+  });
+
+  it("formatOptionsBar shows active focused indicator for option 3 and 4 in narrow view", () => {
+    // Width 36 triggers narrow 3-pills view
+    const out3 = formatOptionsBar(
+      { format: "jsonl", mode: "full", redact: false, includeTools: true, includeDiffs: true },
+      true,
+      3, // tools
+      36
+    );
+    assert.ok(out3.includes(">[tls:on]<") || out3.includes(">[tools:"), "Option 3 should be focused in narrow view");
+
+    const out4 = formatOptionsBar(
+      { format: "jsonl", mode: "full", redact: false, includeTools: true, includeDiffs: true },
+      true,
+      4, // diffs
+      36
+    );
+    assert.ok(out4.includes(">[dif:on]<") || out4.includes(">[diffs:"), "Option 4 should be focused in narrow view");
+  });
+
+  it("buildPickerLines renders clean unclipped footer on 20-column terminal", () => {
+    const lines = buildPickerLines(
+      sampleConversations,
+      { workspace: "d:/test", isAll: false, optionsFocus: false },
+      "",
+      0,
+      20,
+      24
+    );
+    const footerLine = lines[lines.length - 1];
+    assert.ok(footerLine.endsWith("esc"), `Footer on 20-column terminal must end with 'esc', got: "${footerLine}"`);
   });
 });

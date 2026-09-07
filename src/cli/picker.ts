@@ -147,7 +147,10 @@ export function formatOptionsBar(
   if (s.length <= maxWidth) return s;
 
   // 6. Narrow (3 pills)
-  const threePills = compactItems.slice(0, 3).map((it, idx) => {
+  const startIndex3 = optionsFocus && focusedIndex >= 3 ? Math.max(0, focusedIndex - 2) : 0;
+  const threeItems = compactItems.slice(startIndex3, startIndex3 + 3);
+  const threePills = threeItems.map((it, offset) => {
+    const idx = startIndex3 + offset;
     const text = `${it.label}:${it.value}`;
     return optionsFocus && idx === focusedIndex ? `>[${text}]<` : `[${text}]`;
   }).join(" ");
@@ -155,7 +158,10 @@ export function formatOptionsBar(
   if (s.length <= maxWidth) return s;
 
   // 7. Tiny (2 pills values only)
-  const twoPills = compactItems.slice(0, 2).map((it, idx) => {
+  const startIndex2 = optionsFocus && focusedIndex >= 2 ? Math.max(0, focusedIndex - 1) : 0;
+  const twoItems = compactItems.slice(startIndex2, startIndex2 + 2);
+  const twoPills = twoItems.map((it, offset) => {
+    const idx = startIndex2 + offset;
     const text = String(it.value);
     return optionsFocus && idx === focusedIndex ? `>[${text}]<` : `[${text}]`;
   }).join(" ");
@@ -163,7 +169,8 @@ export function formatOptionsBar(
   if (s.length <= maxWidth) return s;
 
   // 8. Micro (1 pill value only)
-  const onePill = optionsFocus && focusedIndex === 0 ? `>[${exportOptions.format}]<` : `[${exportOptions.format}]`;
+  const focusedItem = compactItems[focusedIndex] || compactItems[0];
+  const onePill = optionsFocus ? `>[${focusedItem.value}]<` : `[${exportOptions.format}]`;
   s = ` ${onePill}`;
   if (s.length <= maxWidth) return s;
 
@@ -189,62 +196,9 @@ export function handlePickerKeypress(
     return { shouldRender: false, done: true, result: null };
   }
 
-  // 2. Tab toggles workspace filter
-  if (key.name === "tab") {
-    options.isAll = !options.isAll;
-    state.filteredList = filterConversations(conversations, state.searchQuery, options.isAll);
-    state.selectedIndex = 0;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // 3. Ctrl+O / Alt+O / F2 toggles options focus mode
-  if (((key.ctrl || key.meta) && key.name === "o") || key.name === "f2") {
-    state.optionsFocus = !state.optionsFocus;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // 4. Dedicated hotkeys (work both when optionsFocus is true and false!)
-  // Format: Ctrl+F, Alt+F, F3
-  if (((key.ctrl || key.meta) && key.name === "f") || key.name === "f3") {
-    state.exportOptions.format = cycleFormat(state.exportOptions.format);
-    if (state.optionsFocus) state.focusedOptionIndex = 0;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // Mode: Alt+M, Ctrl+E, Ctrl+P, Alt+E, F4
-  if (
-    ((key.ctrl || key.meta) && (key.name === "e" || key.name === "p")) ||
-    (key.meta && key.name === "m") ||
-    key.name === "f4"
-  ) {
-    state.exportOptions.mode = cycleMode(state.exportOptions.mode);
-    if (state.optionsFocus) state.focusedOptionIndex = 1;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // Redact: Ctrl+R, Alt+R, F6
-  if (((key.ctrl || key.meta) && key.name === "r") || key.name === "f6") {
-    state.exportOptions.redact = !state.exportOptions.redact;
-    if (state.optionsFocus) state.focusedOptionIndex = 2;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // Tools: Ctrl+T, Alt+T, F7
-  if (((key.ctrl || key.meta) && key.name === "t") || key.name === "f7") {
-    state.exportOptions.includeTools = !state.exportOptions.includeTools;
-    if (state.optionsFocus) state.focusedOptionIndex = 3;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // Diffs: Ctrl+D, Alt+D, F8
-  if (((key.ctrl || key.meta) && key.name === "d") || key.name === "f8") {
-    state.exportOptions.includeDiffs = !state.exportOptions.includeDiffs;
-    if (state.optionsFocus) state.focusedOptionIndex = 4;
-    return { shouldRender: true, done: false, result: null };
-  }
-
-  // 5. If Options focus is active:
+  // 2. Options Focus Mode handling
   if (state.optionsFocus) {
+    // Navigation between options: Left / Right / Tab / Shift+Tab
     if (key.name === "left") {
       state.focusedOptionIndex = (state.focusedOptionIndex - 1 + 5) % 5;
       return { shouldRender: true, done: false, result: null };
@@ -255,50 +209,93 @@ export function handlePickerKeypress(
       return { shouldRender: true, done: false, result: null };
     }
 
-    // Space, Enter, Return, Up, Down toggle the focused option (matches 'space/enter toggle' hint)
+    if (key.name === "tab" || key.name === "backtab") {
+      if (key.shift || key.name === "backtab") {
+        state.focusedOptionIndex = (state.focusedOptionIndex - 1 + 5) % 5;
+      } else {
+        state.focusedOptionIndex = (state.focusedOptionIndex + 1) % 5;
+      }
+      return { shouldRender: true, done: false, result: null };
+    }
+
+    // Space, Enter, Return, Up, Down toggle the focused option
     if (
       key.name === "up" ||
       key.name === "down" ||
       key.name === "space" ||
+      key.sequence === " " ||
       key.name === "return" ||
-      key.name === "enter"
+      key.name === "enter" ||
+      key.sequence === "\r" ||
+      key.sequence === "\n"
     ) {
       toggleFocusedOption(state);
       return { shouldRender: true, done: false, result: null };
     }
 
     // Direct single-letter shortcuts when in options focus mode:
-    if (key.sequence === "f" || key.sequence === "F") {
+    if (
+      key.sequence === "f" ||
+      key.sequence === "F" ||
+      ((key.ctrl || key.meta) && key.name === "f") ||
+      key.name === "f3"
+    ) {
       state.exportOptions.format = cycleFormat(state.exportOptions.format);
       state.focusedOptionIndex = 0;
       return { shouldRender: true, done: false, result: null };
     }
 
-    if (key.sequence === "m" || key.sequence === "M") {
+    if (
+      key.sequence === "m" ||
+      key.sequence === "M" ||
+      ((key.ctrl || key.meta) && (key.name === "e" || key.name === "p")) ||
+      (key.meta && key.name === "m") ||
+      key.name === "f4"
+    ) {
       state.exportOptions.mode = cycleMode(state.exportOptions.mode);
       state.focusedOptionIndex = 1;
       return { shouldRender: true, done: false, result: null };
     }
 
-    if (key.sequence === "r" || key.sequence === "R") {
+    if (
+      key.sequence === "r" ||
+      key.sequence === "R" ||
+      ((key.ctrl || key.meta) && key.name === "r") ||
+      key.name === "f6"
+    ) {
       state.exportOptions.redact = !state.exportOptions.redact;
       state.focusedOptionIndex = 2;
       return { shouldRender: true, done: false, result: null };
     }
 
-    if (key.sequence === "t" || key.sequence === "T") {
+    if (
+      key.sequence === "t" ||
+      key.sequence === "T" ||
+      ((key.ctrl || key.meta) && key.name === "t") ||
+      key.name === "f7"
+    ) {
       state.exportOptions.includeTools = !state.exportOptions.includeTools;
       state.focusedOptionIndex = 3;
       return { shouldRender: true, done: false, result: null };
     }
 
-    if (key.sequence === "d" || key.sequence === "D") {
+    if (
+      key.sequence === "d" ||
+      key.sequence === "D" ||
+      ((key.ctrl || key.meta) && key.name === "d") ||
+      key.name === "f8"
+    ) {
       state.exportOptions.includeDiffs = !state.exportOptions.includeDiffs;
       state.focusedOptionIndex = 4;
       return { shouldRender: true, done: false, result: null };
     }
 
-    if (key.sequence === "o" || key.sequence === "O") {
+    if (
+      key.sequence === "o" ||
+      key.sequence === "O" ||
+      ((key.ctrl || key.meta) && key.name === "o") ||
+      key.name === "f2"
+    ) {
       state.optionsFocus = false;
       return { shouldRender: true, done: false, result: null };
     }
@@ -306,9 +303,29 @@ export function handlePickerKeypress(
     return { shouldRender: false, done: false, result: null };
   }
 
+  // 3. Main Screen (optionsFocus is false)
+  // Entry point to options mode: Tab, Backtab, Ctrl+O, Alt+O, F2
+  if (
+    key.name === "tab" ||
+    key.name === "backtab" ||
+    ((key.ctrl || key.meta) && key.name === "o") ||
+    key.name === "f2"
+  ) {
+    state.optionsFocus = true;
+    return { shouldRender: true, done: false, result: null };
+  }
+
+  // Workspace filter toggle: Ctrl+W
+  if ((key.ctrl || key.meta) && key.name === "w") {
+    options.isAll = !options.isAll;
+    state.filteredList = filterConversations(conversations, state.searchQuery, options.isAll);
+    state.selectedIndex = 0;
+    return { shouldRender: true, done: false, result: null };
+  }
+
   // 6. Normal conversation list navigation & export selection (when optionsFocus is false)
   // Enter or Return to export selection
-  if (key.name === "return" || key.name === "enter") {
+  if (key.name === "return" || key.name === "enter" || key.sequence === "\r" || key.sequence === "\n") {
     if (state.filteredList.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredList.length) {
       const conv = state.filteredList[state.selectedIndex];
       const result: PickerResult = {
@@ -617,46 +634,32 @@ export function buildPickerLines(
 
   let footer = "";
   if (optionsFocus) {
-    footer = "  ←→ select   space/enter toggle   f/m/r/t/d set   esc done";
-    if (maxLineWidth < 65) {
-      footer = "  ←→ select   space toggle   f/m/r/t/d   esc done";
-    }
-    if (maxLineWidth < 50) {
-      footer = "  ←→ move   space toggle   esc done";
-    }
-    if (maxLineWidth < 35) {
-      footer = "  ←→ space esc";
-    }
-  } else {
-    footer = options.isAll
-      ? "  ↑↓ nav   type search   enter export   tab workspace   ^O opt   esc quit"
-      : "  ↑↓ nav   type search   enter export   tab all   ^O opt   esc quit";
-    if (maxLineWidth < 75) {
-      footer = options.isAll
-        ? "  ↑↓ nav   enter export   tab ws   ^O opt   esc quit"
-        : "  ↑↓ nav   enter export   tab all   ^O opt   esc quit";
-    }
+    footer = "  ←→/tab navigate   space/enter toggle   esc back";
     if (maxLineWidth < 60) {
-      footer = options.isAll
-        ? "  ↑↓ nav   enter ok   tab ws   esc quit"
-        : "  ↑↓ nav   enter ok   tab all   esc quit";
+      footer = "  ←→/tab nav   space toggle   esc back";
     }
     if (maxLineWidth < 45) {
-      footer = "  ↑↓ nav  enter ok  tab all  esc quit";
+      footer = "  ←→ nav   space toggle   esc back";
+    }
+    if (maxLineWidth < 30) {
+      footer = "  ←→  space  esc";
+    }
+  } else {
+    footer = "  ↑↓ navigate   enter export   tab options   esc quit";
+    if (maxLineWidth < 58) {
+      footer = "  ↑↓ nav   enter export   tab options   esc quit";
+    }
+    if (maxLineWidth < 48) {
+      footer = "  ↑↓ nav   enter ok   tab opt   esc quit";
+    }
+    if (maxLineWidth < 40) {
+      footer = "  ↑↓ nav  enter ok  tab opt  esc";
     }
     if (maxLineWidth < 30) {
       footer = "  ↑↓  enter  tab  esc";
     }
-  }
-
-  let hints = "";
-  if (!optionsFocus && safeRows >= 16 && !isMinimal && !isCompact) {
-    hints = "  ^F format   ^E mode   ^R redact   ^T tools   ^D diffs   ^O options";
-    if (maxLineWidth < 70) {
-      hints = "  ^F fmt   ^E mode   ^R red   ^T tls   ^D dif   ^O opt";
-    }
-    if (maxLineWidth < 50) {
-      hints = "  ^F fmt  ^E mode  ^R red  ^T tls  ^D dif";
+    if (maxLineWidth < 21) {
+      footer = "  ↑↓ enter tab esc";
     }
   }
 
@@ -667,7 +670,7 @@ export function buildPickerLines(
   } else if (isCompact) {
     bottomOverhead = 3;
   } else {
-    bottomOverhead = hints ? 6 : 5;
+    bottomOverhead = 5;
   }
 
   const totalOverhead = headerLinesCount + bottomOverhead;
@@ -711,10 +714,6 @@ export function buildPickerLines(
   }
 
   lines.push(footer);
-
-  if (hints) {
-    lines.push(hints);
-  }
 
   // Guarantee that every line is strictly within maxLineWidth and contains no newlines
   const clamped = lines.map((l) => (l.length > maxLineWidth ? l.slice(0, maxLineWidth) : l));
