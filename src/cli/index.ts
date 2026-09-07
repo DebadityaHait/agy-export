@@ -6,7 +6,7 @@ import path from "node:path";
 import { listConversations } from "../sessions/discovery.js";
 import { exportConversation, ExportError } from "../export/index.js";
 import { runDoctor } from "./doctor.js";
-import { runConversationPicker } from "./picker.js";
+import { runConversationPicker, PickerExportOptions } from "./picker.js";
 import { ExportOptions, SurfaceType, ExportFormat, ExportMode, SourceAdapterType } from "../schema/v1.js";
 import { TranscriptRetrievalError } from "../sources/index.js";
 
@@ -147,9 +147,19 @@ async function main() {
       process.exit(0);
     }
 
+    const initialExportOptions: PickerExportOptions = {
+      format: options.format || "jsonl",
+      mode: options.mode || "full",
+      redact: Boolean(options.redact),
+      includeTools: options.excludeTools ? false : true,
+      includeDiffs: options.excludeDiffs ? false : true,
+      redactPaths: Boolean(options.redactPaths)
+    };
+
     const selected = await runConversationPicker(conversations, {
       workspace: options.cwd || process.cwd(),
-      isAll: Boolean(options.all)
+      isAll: Boolean(options.all),
+      exportOptions: initialExportOptions
     });
 
     if (!selected) {
@@ -157,7 +167,29 @@ async function main() {
       process.exit(0);
     }
 
-    options.id = selected.id;
+    options.id = selected.conversation ? selected.conversation.id : selected.id;
+    if (selected.options) {
+      options.format = selected.options.format;
+      options.mode = selected.options.mode;
+      options.redact = selected.options.redact;
+      if (selected.options.includeTools) {
+        options.includeTools = true;
+        options.excludeTools = false;
+      } else {
+        options.includeTools = false;
+        options.excludeTools = true;
+      }
+      if (selected.options.includeDiffs) {
+        options.includeDiffs = true;
+        options.excludeDiffs = false;
+      } else {
+        options.includeDiffs = false;
+        options.excludeDiffs = true;
+      }
+      if (selected.options.redactPaths !== undefined) {
+        options.redactPaths = selected.options.redactPaths;
+      }
+    }
   }
 
   // 4. Export conversation
