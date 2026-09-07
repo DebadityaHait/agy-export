@@ -1,0 +1,55 @@
+{
+  "name": "agy-export",
+  "version": "0.1.0",
+  "description": "Export a single Google Antigravity conversation cleanly",
+  "keywords": [
+    "antigravity",
+    "export",
+    "jsonl",
+    "conversation",
+    "agent",
+    "cli"
+  ],
+  "author": "agy-export contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DebadityaHait/agy-export.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agy-export": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit && tsc -p test/tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "pack:test": "node --import tsx test/pack.smoke.test.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
+    "eslint": "^9.21.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

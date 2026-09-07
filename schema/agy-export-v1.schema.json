@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/agy-tools/agy-export/main/schema/agy-export-v1.schema.json",
+  "title": "agy-export v1 Schema",
+  "description": "Normalized event schema for Google Antigravity single-session export",
+  "oneOf": [
+    { "$ref": "#/$defs/SessionEvent" },
+    { "$ref": "#/$defs/MessageEvent" },
+    { "$ref": "#/$defs/ToolCallEvent" },
+    { "$ref": "#/$defs/ToolResultEvent" },
+    { "$ref": "#/$defs/CommandEvent" },
+    { "$ref": "#/$defs/FileChangeEvent" },
+    { "$ref": "#/$defs/ArtifactEvent" },
+    { "$ref": "#/$defs/WarningEvent" }
+  ],
+  "$defs": {
+    "SessionEvent": {
+      "type": "object",
+      "required": ["schema", "type", "id", "title", "workspace"],
+      "properties": {
+        "schema": { "const": "agy-export/v1" },
+        "type": { "const": "session" },
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "workspace": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" },
+        "source": { "type": "string" },
+        "project_id": { "type": "string" },
+        "parent_session_id": { "type": "string" },
+        "step_count": { "type": "integer" },
+        "model": { "type": "string" },
+        "surface": { "enum": ["cli", "ide"] }
+      },
+      "additionalProperties": false
+    },
+    "MessageEvent": {
+      "type": "object",
+      "required": ["type", "role", "content"],
+      "properties": {
+        "type": { "const": "message" },
+        "role": { "enum": ["user", "assistant", "system_visible"] },
+        "timestamp": { "type": "string" },
+        "content": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "ToolCallEvent": {
+      "type": "object",
+      "required": ["type", "tool", "input"],
+      "properties": {
+        "type": { "const": "tool_call" },
+        "tool": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "input": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "ToolResultEvent": {
+      "type": "object",
+      "required": ["type", "tool"],
+      "properties": {
+        "type": { "const": "tool_result" },
+        "tool": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "content": {},
+        "exit_code": { "type": "integer" },
+        "summary": { "type": "string" },
+        "truncated": { "type": "boolean" },
+        "original_bytes": { "type": "integer" },
+        "exported_bytes": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "CommandEvent": {
+      "type": "object",
+      "required": ["type", "command"],
+      "properties": {
+        "type": { "const": "command" },
+        "command": { "type": "string" },
+        "cwd": { "type": "string" },
+        "exit_code": { "type": "integer" },
+        "output": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "FileChangeEvent": {
+      "type": "object",
+      "required": ["type", "path", "operation"],
+      "properties": {
+        "type": { "const": "file_change" },
+        "path": { "type": "string" },
+        "operation": { "enum": ["modify", "create", "delete", "rename", "unknown"] },
+        "diff": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "ArtifactEvent": {
+      "type": "object",
+      "required": ["type", "content"],
+      "properties": {
+        "type": { "const": "artifact" },
+        "identifier": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "WarningEvent": {
+      "type": "object",
+      "required": ["type", "message"],
+      "properties": {
+        "type": { "const": "warning" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
