@@ -48,11 +48,6 @@ export function normalizeWorkspacePath(inputPath: string): string {
   }
 
   // Handle Windows UNC paths: //server/share
-  // On non-Windows platforms, redundant leading slashes are not UNC paths
-  if (os.platform() !== "win32" && p.startsWith("//") && !p.startsWith("///")) {
-    p = p.replace(/^\/+/, "/");
-  }
-
   const isUnc = p.startsWith("//") && !p.startsWith("///");
 
   // Normalize dot segments (. and ..)

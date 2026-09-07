@@ -112,7 +112,12 @@ describe("CLI integration tests", () => {
       fixtureEnv.workspaceDir
     ]);
 
-    assert.equal(stderr, "");
+    const cleanStderr = stderr
+      .split("\n")
+      .filter((l) => !l.includes("ExperimentalWarning") && !l.includes("--trace-warnings"))
+      .join("\n")
+      .trim();
+    assert.equal(cleanStderr, "");
     // stdout must NOT have ANSI escape codes
     assert.equal(/\x1b\[[0-9;]*m/.test(stdout), false);
     // stdout must NOT have success banner

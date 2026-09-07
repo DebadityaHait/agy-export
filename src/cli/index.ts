@@ -10,6 +10,16 @@ import { runConversationPicker, PickerExportOptions } from "./picker.js";
 import { ExportOptions, SurfaceType, ExportFormat, ExportMode, SourceAdapterType } from "../schema/v1.js";
 import { TranscriptRetrievalError } from "../sources/index.js";
 
+// Suppress Node.js experimental warnings (such as SQLite in Node 22) from polluting CLI stderr
+const originalEmitWarning = process.emitWarning;
+process.emitWarning = (warning: string | Error, ...args: unknown[]) => {
+  const msg = typeof warning === "string" ? warning : warning?.message;
+  if (msg && msg.includes("SQLite is an experimental feature")) {
+    return;
+  }
+  return Reflect.apply(originalEmitWarning, process, [warning, ...args]);
+};
+
 const program = new Command();
 
 program
