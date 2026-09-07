@@ -42,7 +42,17 @@ export function normalizeWorkspacePath(inputPath: string): string {
   // Normalize all backslashes to forward slashes for internal consistency
   p = p.replace(/\\/g, "/");
 
+  // Strip leading slash before Windows drive letters (e.g. "/d:/" -> "d:/", "/d:" -> "d:")
+  if (/^\/[a-zA-Z]:(?:\/|$)/.test(p)) {
+    p = p.slice(1);
+  }
+
   // Handle Windows UNC paths: //server/share
+  // On non-Windows platforms, redundant leading slashes are not UNC paths
+  if (os.platform() !== "win32" && p.startsWith("//") && !p.startsWith("///")) {
+    p = p.replace(/^\/+/, "/");
+  }
+
   const isUnc = p.startsWith("//") && !p.startsWith("///");
 
   // Normalize dot segments (. and ..)

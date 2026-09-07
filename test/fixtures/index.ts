@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 
 const nodeRequire = createRequire(import.meta.url);
@@ -138,7 +139,7 @@ export function createFixtureEnvironment(daemonPort?: number): FixtureEnvironmen
           conversation_id, title, preview, step_count, last_modified_time, workspace_uris, source, project_id, last_user_input_time
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      const fileUri = `file:///${workspaceDir.replace(/\\/g, "/")}`;
+      const fileUri = pathToFileURL(workspaceDir).href;
       insert.run(
         "sqlite-conv-1111-2222-3333-444444444444",
         "Fix sqlite conversation summary parsing",

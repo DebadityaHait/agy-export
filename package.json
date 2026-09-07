@@ -37,7 +37,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit && tsc -p test/tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
-    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "pretest": "npm run build",
+    "test": "node --import tsx --test \"test/unit/**/*.test.ts\" \"test/integration/**/*.test.ts\"",
     "pack:test": "node --import tsx test/pack.smoke.test.ts",
     "prepack": "npm run build"
   },

@@ -35,11 +35,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit and Integration Tests
-        run: npm test
-
       - name: Build
         run: npm run build
+
+      - name: Unit and Integration Tests
+        run: npm test
 
       - name: Packed tarball smoke test
         run: npm run pack:test
